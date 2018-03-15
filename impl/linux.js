@@ -44,6 +44,7 @@ var defaultDevice = function(cb) {
 };
 
 var reInfo = /[a-z][a-z ]*\: Playback [0-9-]+ \[([0-9]+)\%\] (?:[[0-9\.-]+dB\] )?\[(on|off)\]/i;
+var reLeftInfo = /Front Left: [0-9]+ \[([0-9]+)\%\]/i;
 var getInfo = function (cb) {
   defaultDevice(function (err, dev) {
     if(err) {
@@ -55,7 +56,16 @@ var getInfo = function (cb) {
         } else {
           var res = reInfo.exec(data);
           if(res === null) {
-            cb(new Error('Alsa Mixer Error: failed to parse output'));
+            var leftRes = reLeftInfo.exec(data);
+            if (leftRes == null) {
+              cb(new Error('Alsa Mixer Error: failed to parse output'));
+            } else {
+              var leftVolume = parseInt(leftRes[1], 10);
+              cb(null, {
+                volume: leftVolume,
+                muted: leftVolume === 0
+              });
+            }
           } else {
             cb(null, {
               volume: parseInt(res[1], 10),
